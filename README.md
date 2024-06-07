@@ -314,4 +314,4 @@ Agora que tudo está pronto, basta fazermos um teste com uma rota protegida. Par
 ```
 
 Ela só será acessível se passarmos um token válido no cabeçalho da requisição.
-A anotação @AuthenticationPrincipal, recupera automáticamente o usuário logado.
+A anotação `@AuthenticationPrincipal`, recupera automáticamente o usuário logado.
