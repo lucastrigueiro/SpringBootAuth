@@ -1,1 +1,10 @@
-spring.application.name: springbootauth
+spring:
+  application:
+    name: springbootauth
+
+api:
+  security:
+    token:
+      secret: ${JWT_SECRET:secret_key}
+      expiration: ${JWT_EXPIRATION_MINUTES:60}
+      issuer: ${JWT_ISSUER:SpringBootAuth}

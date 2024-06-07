@@ -1,4 +1,4 @@
-package com.example.springbootauth;
+package com.lucastrigueiro.springbootauth;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
