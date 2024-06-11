@@ -315,3 +315,149 @@ Agora que tudo está pronto, basta fazermos um teste com uma rota protegida. Par
 
 Ela só será acessível se passarmos um token válido no cabeçalho da requisição.
 A anotação `@AuthenticationPrincipal`, recupera automáticamente o usuário logado.
+
+
+
+# Autorização JWT com Spring Security
+
+## Propósito
+O propósito dessa continuação é mostrar de maneira simples como implementar a autorização no nosso projeto base
+
+## Diferença entre Authorities e Roles
+Authorities e Roles são usados para controlar o acesso a diferentes partes da aplicação, mas eles têm significados diferentes:
+
+### Authorities
+**Authorities** representam as permissões individuais ou privilégios que um usuário possui.
+Uma authority pode ser algo como `READ_PRIVILEGE`, `WRITE_PRIVILEGE`, ou qualquer outra permissão granular que controla o acesso a ações específicas dentro da aplicação.
+No Spring Security, authorities são expressas como objetos GrantedAuthority, que essencialmente são strings que representam essas permissões.
+
+### Roles
+**Roles** são um nível mais alto de abstração e são usados para agrupar várias permissões (authorities) sob uma única etiqueta.
+Um role pode ser visto como um conjunto de authorities. Por exemplo, um `ROLE_ADMIN` pode incluir authorities como `READ_PRIVILEGE`, `WRITE_PRIVILEGE`, e `DELETE_PRIVILEGE`.
+No Spring Security, quando você define uma role, ela é geralmente prefixada com ROLE_ para distinguir de uma simples authority. Isso ajuda o framework a entender que se trata de uma role e não apenas de uma authority.
+
+## Impementação da autorização
+A implementação da autorização será feita em 4 passos:
+
+
+### 1) Adicionando um novo usuário
+Em nosso exemplo tinhamos apenas um usuário hardcoded, agora vamos adicionar um novo usuário para podermos comparar os seus níveis de acesso.
+Para nosso exemplo, vamos adicionar um novo usuário chamado `admin` com a senha `123`.
+
+```java
+@Override
+public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    if (username.equals("admin")) {
+        return new User(1L, "admin", new BCryptPasswordEncoder().encode("123"));
+    } else if (username.equals("lucas")) {
+        return new User(2L, "lucas", new BCryptPasswordEncoder().encode("123"));
+    }
+    throw new UsernameNotFoundException("User not found");
+}
+```
+
+### 2) Retornando Roles e Authorities específicas para cada usuário
+Nesse exemplo, vamos retornar roles e authorities diferentes para cada usuário:
+- O usuário **admin** terá a role `ROLE_ADMIN` e a authority `AUTHORITY_READ1`.
+- O usuário **lucas** terá a role `ROLE_USER` e a authority `AUTHORITY_READ2`.
+
+```java
+@Override
+public Collection<? extends GrantedAuthority> getAuthorities() {
+    if (login.equals("admin")) {
+        return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("AUTHORITY_READ1"));
+    }
+    return List.of(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority("AUTHORITY_READ2"));
+}
+```
+
+
+
+
+
+
+### 3) Definindo as rotas para cada nível de acesso
+Primeiro, vamos definir as rotas que serão protegidas de acordo com o nível de acesso do usuário.
+Nesse exemplo, vamos definir as seguintes rotas:
+
+
+```java
+// Access only available to users with the ADMIN role
+@PostMapping("/adminRole")
+public ResponseEntity protectedAdminRoleRoute(@AuthenticationPrincipal User authenticatedUser) {
+    return ResponseEntity.ok("Protected ADMIN role route! User: " + authenticatedUser.getLogin());
+}
+
+// Access only available to users with the USER role
+@PostMapping("/userRole")
+public ResponseEntity protectedUserRoleRoute(@AuthenticationPrincipal User authenticatedUser) {
+    return ResponseEntity.ok("Protected USER role route! User: " + authenticatedUser.getLogin());
+}
+
+// Access only available to users with the AUTHORITY_READ1 authority
+@PostMapping("/authorityRead1")
+public ResponseEntity protectedAdminAuthorityRoute(@AuthenticationPrincipal User authenticatedUser) {
+    return ResponseEntity.ok("Protected AUTHORITY_READ1 route! User: " + authenticatedUser.getLogin());
+}
+
+// Access only available to users with the AUTHORITY_READ2 authority
+@PostMapping("/authorityRead2")
+public ResponseEntity protectedUserAuthorityRoute(@AuthenticationPrincipal User authenticatedUser) {
+    return ResponseEntity.ok("Protected AUTHORITY_READ2 route! User: " + authenticatedUser.getLogin());
+}
+
+// Access only available to users with ADMIN or USER role
+@PostMapping("/userOrAdminRole")
+public ResponseEntity protectedUserOrAdminRole(@AuthenticationPrincipal User authenticatedUser) {
+    return ResponseEntity.ok("Protected USER or ADMIN role route! User: " + authenticatedUser.getLogin());
+}
+
+// Access only available to users with AUTHORITY_READ1 or AUTHORITY_READ2 authority
+@PostMapping("/authorityRead1or2")
+public ResponseEntity protectedAuthorityRead1or2(@AuthenticationPrincipal User authenticatedUser) {
+    return ResponseEntity.ok("Protected AUTHORITY_READ1 or AUTHORITY_READ2 route! User: " + authenticatedUser.getLogin());
+}
+```
+*Note que até o momento as rotas foram apenas definidas e não estão realmente protegidas. A proteção será feita no próximo passo.*
+
+### 4) Adicionando a proteção das rotas para cada nível de acesso
+
+Nesse exemplo temos:
+- `/auth/adminRole`: Rota que requerem uma role `ROLE_ADMIN`.
+- `/auth/userRole`: Rota que requerem uma role `ROLE_USER`.
+- `/auth/authorityRead1`: Rota que requerem uma authority `AUTHORITY_READ1`.
+- `/auth/authorityRead2`: Rota que requerem uma authority `AUTHORITY_READ2`.
+- `/auth/userOrAdminRole`: Rota que requerem uma role `ROLE_ADMIN` ou uma role `ROLE_USER`.
+- `/auth/authorityRead1or2`: Rota que requerem uma authority `AUTHORITY_READ1` ou uma authority `AUTHORITY_READ2`.
+
+```java
+.authorizeHttpRequests(auth -> auth
+    // Allow access to the login route
+    .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+
+    // Allow access according to the user's role
+    .requestMatchers(HttpMethod.POST, "/auth/adminRole").hasRole("ADMIN")
+    .requestMatchers(HttpMethod.POST, "/auth/userRole").hasRole("USER")
+
+    // Allow access according to the user's authority
+    .requestMatchers(HttpMethod.POST, "/auth/authorityRead1").hasAuthority("AUTHORITY_READ1")
+    .requestMatchers(HttpMethod.POST, "/auth/authorityRead2").hasAuthority("AUTHORITY_READ2")
+
+    // Allows access according to multiple user roles
+    .requestMatchers(HttpMethod.POST, "/auth/userOrAdminRole").hasAnyRole("ADMIN", "USER")
+    // Allows access according to multiple user authorities
+    .requestMatchers(HttpMethod.POST, "/auth/authorityRead1or2").hasAnyAuthority("AUTHORITY_READ1", "AUTHORITY_READ2")
+
+    // Require authentication for all other routes
+    .anyRequest().authenticated()
+)
+```
+
+
+**Observações:**
+- Note que o uso do prefixo `ROLE_` é o que define se é uma **role** ou uma **authority**.
+  No momento de usar o `hasRole`, o valor deve ser passado sem o prefixo. Caso o prefixo seja passado acontecerá um erro semelhante a este:
+  `ROLE_ADMIN should not start with ROLE_ since ROLE_ is automatically prepended when using hasAnyRole`.
+
+- Usar uma *role* como *authority* não é uma prática recomendada, porém não causa erro. Por exemplo: `.hasAuthority("ROLE_USER")` é válido.
+

@@ -12,6 +12,11 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return new User(1L, "lucas", new BCryptPasswordEncoder().encode("123"));
+        if (username.equals("admin")) {
+            return new User(1L, "admin", new BCryptPasswordEncoder().encode("123"));
+        } else if (username.equals("lucas")) {
+            return new User(2L, "lucas", new BCryptPasswordEncoder().encode("123"));
+        }
+        throw new UsernameNotFoundException("User not found");
     }
 }

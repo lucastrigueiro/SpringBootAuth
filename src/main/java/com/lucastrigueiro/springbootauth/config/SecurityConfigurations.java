@@ -33,6 +33,20 @@ public class SecurityConfigurations {
             .authorizeHttpRequests(auth -> auth
                 // Allow access to the login route
                 .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+
+                // Allow access according to the user's role
+                .requestMatchers(HttpMethod.POST, "/auth/adminRole").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/auth/userRole").hasRole("USER")
+
+                // Allow access according to the user's authority
+                .requestMatchers(HttpMethod.POST, "/auth/authorityRead1").hasAuthority("AUTHORITY_READ1")
+                .requestMatchers(HttpMethod.POST, "/auth/authorityRead2").hasAuthority("AUTHORITY_READ2")
+
+                // Allows access according to multiple user roles
+                .requestMatchers(HttpMethod.POST, "/auth/userOrAdminRole").hasAnyRole("ADMIN", "USER")
+                // Allows access according to multiple user authorities
+                .requestMatchers(HttpMethod.POST, "/auth/authorityRead1or2").hasAnyAuthority("AUTHORITY_READ1", "AUTHORITY_READ2")
+
                 // Require authentication for all other routes
                 .anyRequest().authenticated()
             )

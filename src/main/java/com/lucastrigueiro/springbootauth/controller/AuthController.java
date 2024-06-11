@@ -46,4 +46,40 @@ public class AuthController {
         return ResponseEntity.ok("Protected route! User: " + authenticatedUser.getLogin() + " - " + authenticatedUser.getPassword());
     }
 
+    // Access only available to users with the ADMIN role
+    @PostMapping("/adminRole")
+    public ResponseEntity protectedAdminRoleRoute(@AuthenticationPrincipal User authenticatedUser) {
+        return ResponseEntity.ok("Protected ADMIN role route! User: " + authenticatedUser.getLogin());
+    }
+
+    // Access only available to users with the USER role
+    @PostMapping("/userRole")
+    public ResponseEntity protectedUserRoleRoute(@AuthenticationPrincipal User authenticatedUser) {
+        return ResponseEntity.ok("Protected USER role route! User: " + authenticatedUser.getLogin());
+    }
+
+    // Access only available to users with the AUTHORITY_READ1 authority
+    @PostMapping("/authorityRead1")
+    public ResponseEntity protectedAdminAuthorityRoute(@AuthenticationPrincipal User authenticatedUser) {
+        return ResponseEntity.ok("Protected AUTHORITY_READ1 route! User: " + authenticatedUser.getLogin());
+    }
+
+    // Access only available to users with the AUTHORITY_READ2 authority
+    @PostMapping("/authorityRead2")
+    public ResponseEntity protectedUserAuthorityRoute(@AuthenticationPrincipal User authenticatedUser) {
+        return ResponseEntity.ok("Protected AUTHORITY_READ2 route! User: " + authenticatedUser.getLogin());
+    }
+
+    // Access only available to users with ADMIN or USER role
+    @PostMapping("/userOrAdminRole")
+    public ResponseEntity protectedUserOrAdminRole(@AuthenticationPrincipal User authenticatedUser) {
+        return ResponseEntity.ok("Protected USER or ADMIN role route! User: " + authenticatedUser.getLogin());
+    }
+
+    // Access only available to users with AUTHORITY_READ1 or AUTHORITY_READ2 authority
+    @PostMapping("/authorityRead1or2")
+    public ResponseEntity protectedAuthorityRead1or2(@AuthenticationPrincipal User authenticatedUser) {
+        return ResponseEntity.ok("Protected AUTHORITY_READ1 or AUTHORITY_READ2 route! User: " + authenticatedUser.getLogin());
+    }
+
 }
